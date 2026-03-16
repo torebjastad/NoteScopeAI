@@ -46,12 +46,14 @@ class ToneRecognitionApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Piano Tone AI")
-        self.root.geometry("960x640")
-        self.root.minsize(800, 520)
+        self.root.geometry("960x720")
+        self.root.minsize(800, 580)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model  = None
         self._current_folder = ""
+        self._result     = None
+        self._sel_window = 0
 
         self._build_ui()
         self._load_model()
@@ -96,7 +98,7 @@ class ToneRecognitionApp:
         ttk.Button(btn_row, text="▶  Play again", command=self._play_selected).pack(side=tk.LEFT, padx=2)
         ttk.Button(btn_row, text="⟳  Refresh",    command=self._refresh_list).pack(side=tk.LEFT, padx=2)
 
-        # ── Right: results + chart ───────────────────────────────────────────
+        # ── Right: results + charts ──────────────────────────────────────────
         right = ttk.Frame(pane, padding=(12, 4, 4, 4))
         pane.add(right, weight=2)
 
@@ -122,11 +124,15 @@ class ToneRecognitionApp:
 
         ttk.Separator(right, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=(10, 6))
 
-        # Matplotlib chart
-        self.fig, self.ax = plt.subplots(figsize=(5, 2.8))
+        # Matplotlib: scatter (top) + mel spectrogram (bottom)
+        self.fig, (self.ax_scatter, self.ax_mel) = plt.subplots(
+            2, 1, figsize=(5, 4.2),
+            gridspec_kw={"height_ratios": [1, 1.5]},
+        )
         self.fig.patch.set_facecolor("#f8f8f8")
         self.canvas = FigureCanvasTkAgg(self.fig, master=right)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas.mpl_connect("button_press_event", self._on_chart_click)
         self._draw_empty_chart()
 
         # Status bar
@@ -138,75 +144,105 @@ class ToneRecognitionApp:
     # ── Chart ────────────────────────────────────────────────────────────────
 
     def _draw_empty_chart(self):
-        ax = self.ax
-        ax.clear()
-        ax.set_facecolor("#f0f0f0")
-        ax.set_xlabel("Window", fontsize=8)
-        ax.set_ylabel("Note", fontsize=8)
-        ax.text(0.5, 0.5, "Select a file to see window predictions",
-                transform=ax.transAxes, ha="center", va="center",
-                fontsize=9, color="gray")
-        ax.tick_params(labelsize=7)
+        for ax, msg in [
+            (self.ax_scatter, "Select a file to see window predictions"),
+            (self.ax_mel,     "Mel spectrogram appears here"),
+        ]:
+            ax.clear()
+            ax.set_facecolor("#f0f0f0")
+            ax.text(0.5, 0.5, msg, transform=ax.transAxes,
+                    ha="center", va="center", fontsize=9, color="gray")
+            ax.tick_params(labelsize=7)
         self.fig.tight_layout(pad=1.2)
         self.canvas.draw()
 
-    def _draw_window_chart(self, result):
-        labels = result["window_labels"]   # per-window predicted note index
-        confs  = result["window_confs"]    # per-window confidence
-        final  = result["note_name"]
-        final_idx = next(i for i in range(88)
-                         if index_to_note_name(i) == final)
+    def _draw_scatter(self, result, sel_win):
+        labels    = result["window_labels"]
+        confs     = result["window_confs"]
+        final     = result["note_name"]
+        final_idx = next(i for i in range(88) if index_to_note_name(i) == final)
 
-        ax = self.ax
+        ax = self.ax_scatter
         ax.clear()
         ax.set_facecolor("#f9f9f9")
 
-        n = len(labels)
+        n  = len(labels)
         xs = list(range(1, n + 1))
 
-        # Shade octave bands alternately for readability
+        # Alternating octave bands
         for oct_start in range(0, 88, 12):
             color = "#e8e8e8" if (oct_start // 12) % 2 == 0 else "#f5f5f5"
-            ax.axhspan(oct_start - 0.5, min(oct_start + 11.5, 87.5),
-                       color=color, zorder=0)
+            ax.axhspan(oct_start - 0.5, min(oct_start + 11.5, 87.5), color=color, zorder=0)
 
-        # Final averaged prediction: horizontal dashed line
+        # Final averaged prediction: dashed line
         ax.axhline(final_idx, color="#1a6ebd", linewidth=1.2,
-                   linestyle="--", alpha=0.7, zorder=1, label=f"avg: {final}")
+                   linestyle="--", alpha=0.7, zorder=1)
 
-        # Per-window dots — green if agrees with final, orange if not
+        # Highlight selected window
+        ax.axvline(sel_win + 1, color="#cc0000", alpha=0.30, linewidth=8, zorder=1)
+
+        # Per-window dots
         for x, lbl, conf in zip(xs, labels, confs):
             color = "#2ca02c" if lbl == final_idx else "#ff7f0e"
             ax.scatter(x, lbl, s=80 + 120 * conf, color=color,
                        zorder=3, alpha=0.85, edgecolors="white", linewidths=0.5)
 
-        # Y-axis: only C notes + A4
+        # Y-axis: C notes + A4
         tick_pos = sorted(_TICK_LABELS.keys())
         ax.set_yticks(tick_pos)
         ax.set_yticklabels([_TICK_LABELS[t] for t in tick_pos], fontsize=7)
         ax.set_ylim(-1, 88)
 
-        # X-axis
         ax.set_xlim(0.3, n + 0.7)
         ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
         ax.tick_params(axis="x", labelsize=7)
-        ax.set_xlabel("Window #", fontsize=8)
+        ax.set_xlabel("Window # — click to view mel spec", fontsize=7)
         ax.set_ylabel("Predicted note", fontsize=8)
 
-        # Legend
         from matplotlib.lines import Line2D
-        legend_handles = [
+        ax.legend(handles=[
             Line2D([0], [0], marker='o', color='w', markerfacecolor='#2ca02c',
                    markersize=7, label='agrees'),
             Line2D([0], [0], marker='o', color='w', markerfacecolor='#ff7f0e',
                    markersize=7, label='differs'),
             Line2D([0], [0], color='#1a6ebd', linestyle='--',
                    linewidth=1.2, label=f'avg → {final}'),
-        ]
-        ax.legend(handles=legend_handles, fontsize=7, loc="upper right",
-                  framealpha=0.8)
+        ], fontsize=7, loc="upper right", framealpha=0.8)
 
-        self.fig.tight_layout(pad=1.2)
+    def _draw_mel(self, result, win_idx):
+        ax   = self.ax_mel
+        spec = result["window_specs"][win_idx]   # numpy [N_MELS, T]
+        note = index_to_note_name(result["window_labels"][win_idx])
+        conf = result["window_confs"][win_idx]
+
+        ax.clear()
+        ax.imshow(spec, aspect="auto", origin="lower", cmap="magma",
+                  interpolation="nearest")
+        ax.set_title(f"Window {win_idx + 1}  —  {note}  ({conf:.0%})", fontsize=8, pad=3)
+        ax.set_xlabel("Time frame", fontsize=7)
+        ax.set_ylabel("Mel bin", fontsize=7)
+        ax.tick_params(labelsize=6)
+
+    def _draw_window_chart(self, result):
+        self._draw_scatter(result, self._sel_window)
+        self._draw_mel(result, self._sel_window)
+        self.fig.tight_layout(pad=1.0)
+        self.canvas.draw()
+
+    def _on_chart_click(self, event):
+        if event.inaxes != self.ax_scatter or self._result is None:
+            return
+        x = event.xdata
+        if x is None:
+            return
+        n   = len(self._result["window_labels"])
+        idx = max(0, min(n - 1, round(x) - 1))
+        if idx == self._sel_window:
+            return
+        self._sel_window = idx
+        self._draw_scatter(self._result, idx)
+        self._draw_mel(self._result, idx)
+        self.fig.tight_layout(pad=1.0)
         self.canvas.draw()
 
     # ── Model ────────────────────────────────────────────────────────────────
@@ -310,6 +346,9 @@ class ToneRecognitionApp:
             lines.append(f"   {name:<5}  {prob:.1%}")
         self.top3_label.config(text="\n".join(lines))
 
+        # Auto-select most confident window
+        self._result     = result
+        self._sel_window = result["window_confs"].index(max(result["window_confs"]))
         self._draw_window_chart(result)
 
         self._set_status(f"Done  |  {result['note_name']}  ({result['confidence']:.1%})"

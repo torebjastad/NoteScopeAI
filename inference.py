@@ -84,6 +84,7 @@ def predict_note_multi_window(filepath: str, model, device) -> dict:
     avg_probs      = None
     window_labels  = []
     window_confs   = []
+    window_specs   = []
 
     with torch.no_grad():
         for w in windows:
@@ -92,6 +93,7 @@ def predict_note_multi_window(filepath: str, model, device) -> dict:
             conf, idx = torch.max(probs, 1)
             window_labels.append(idx.item())
             window_confs.append(conf.item())
+            window_specs.append(spec.squeeze().cpu().numpy())  # [N_MELS, T]
             avg_probs = probs if avg_probs is None else avg_probs + probs
 
     avg_probs /= len(windows)
@@ -107,6 +109,7 @@ def predict_note_multi_window(filepath: str, model, device) -> dict:
         "n_windows":     len(windows),
         "window_labels": window_labels,
         "window_confs":  window_confs,
+        "window_specs":  window_specs,
     }
 
 
