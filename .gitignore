@@ -1,0 +1,9 @@
+.venv
+*.png
+__pycache__
+*.pth
+preprocessed
+processed_audio
+*.log
+failed_files_report.txt
+preprocessed_v2

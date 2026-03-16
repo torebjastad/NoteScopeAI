@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(code --install-extension ms-python.python --install-extension ms-python.vscode-pylance --install-extension charliermarsh.ruff)",
+      "Bash(code --install-extension ms-python.python)",
+      "Bash(code --install-extension ms-python.vscode-pylance)",
+      "Bash(code --install-extension charliermarsh.ruff)",
+      "Bash(.venv/Scripts/python train.py)",
+      "Bash(.venv/Scripts/python -c \"import torchaudio; print\\(torchaudio.__version__\\); import torch; print\\(torch.__version__\\); import librosa; print\\(librosa.__version__\\)\")",
+      "Bash(.venv/Scripts/python preprocess.py)",
+      "Bash(python -c \":*)",
+      "Bash(.venv/Scripts/python preprocess_v2.py --validate --n-validate 20)",
+      "Bash(.venv/Scripts/python preprocess_v2.py --stage a --skip-validate)",
+      "Bash(python preprocess_v2.py --stage a --skip-validate)",
+      "Bash(conda run:*)",
+      "Read(//c/Users/ToreGrüner/AppData/Local/Programs/Python//**)",
+      "Read(//c/Users/ToreGrüner/miniconda3/**)",
+      "Read(//c/ProgramData/miniconda3/**)",
+      "Read(//c/Users/ToreGrüner/**)",
+      "Bash(\"c:/Users/ToreGrüner/OneDrive/Code/ToneAI/.venv/Scripts/python.exe\" -c \"import torch; import numpy; print\\(''torch:'', torch.__version__, ''cuda:'', torch.cuda.is_available\\(\\)\\)\")",
+      "Bash(\".venv/Scripts/python.exe\" preprocess_v2.py --stage a --skip-validate)",
+      "Bash(powershell.exe -Command \"Start-Process -FilePath ''c:\\\\Users\\\\ToreGrüner\\\\OneDrive\\\\Code\\\\ToneAI\\\\.venv\\\\Scripts\\\\python.exe'' -ArgumentList ''c:\\\\Users\\\\ToreGrüner\\\\OneDrive\\\\Code\\\\ToneAI\\\\preprocess_v2.py'',''--stage'',''a'',''--skip-validate'' -WorkingDirectory ''c:\\\\Users\\\\ToreGrüner\\\\OneDrive\\\\Code\\\\ToneAI'' -RedirectStandardOutput ''c:\\\\Users\\\\ToreGrüner\\\\OneDrive\\\\Code\\\\ToneAI\\\\stage_a.log'' -RedirectStandardError ''c:\\\\Users\\\\ToreGrüner\\\\OneDrive\\\\Code\\\\ToneAI\\\\stage_a_err.log'' -WindowStyle Hidden -PassThru | Select-Object -ExpandProperty Id\")",
+      "Bash(powershell.exe -Command \"Get-Process -Id 15856 -ErrorAction SilentlyContinue | Select-Object Id, CPU, WorkingSet\")",
+      "Bash(\".venv/Scripts/python.exe\" -c \":*)",
+      "Bash(find c:/Users/ToreGrüner/OneDrive/Code/ToneAI/processed_audio/ -name *.ogg -o -name *.wav)",
+      "Bash(powershell.exe -Command \"Get-Process python -ErrorAction SilentlyContinue | Select-Object Id, CPU, WorkingSet\")",
+      "Bash(\".venv/Scripts/python.exe\" -u preprocess_v2.py --stage a --skip-validate)",
+      "Bash(tee stage_a_final.log)",
+      "Bash(.venv/Scripts/python.exe -u preprocess_v2.py --stage a --skip-validate 2)",
+      "Bash(1 echo:*)",
+      "Bash(\".venv/Scripts/python.exe\" complete_stage_a.py)",
+      "Bash(for dur:*)",
+      "Bash(do \".venv/Scripts/python.exe\" -c \":*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(done)",
+      "Bash(\".venv/Scripts/python.exe\" preprocess_v2.py --stage b --skip-validate)",
+      "Bash(\".venv/Scripts/python.exe\" train.py)",
+      "Bash(ls \"c:/Users/ToreGrüner/OneDrive/Code/ToneAI/\"*.log)",
+      "Bash(grep -vE \"\\(\\\\.py|\\\\.pth|\\\\.png|\\\\.json|\\\\.txt|\\\\.ps1|\\\\.md|preprocessed|processed_audio|__pycache__|\\\\.venv\\)$\")",
+      "Bash(\"c:/Users/ToreGrüner/OneDrive/Code/ToneAI/.venv/Scripts/python.exe\" -c \"import sounddevice; print\\(''sounddevice available''\\)\")",
+      "Bash(\"c:/Users/ToreGrüner/OneDrive/Code/ToneAI/.venv/Scripts/pip.exe\" install:*)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\ToreGrüner\\OneDrive\\Code\\ToneAI"
+    ]
+  }
+}
