@@ -41,6 +41,23 @@ NoteScopeAI/
 │   ├── manifest.json     — 81,147 entries: {path, label}
 │   └── specs/{idx}_lbl{label}_c{chunk}.pt  ← shape [1, 128, ~65]
 │
+├── export_onnx.py        — Export PianoNet to ONNX + extract mel filterbank for web
+│
+├── docs/                 — Web app (GitHub Pages deployment)
+│   ├── index.html        — Single-page app
+│   ├── css/style.css     — Dark piano lacquer theme
+│   ├── js/app.js         — Main controller, state machine, UI updates
+│   ├── js/audio-capture.js  — AudioWorklet mic setup, resampling to 22050 Hz
+│   ├── js/mel-spectrogram.js — FFT + mel filterbank + dB conversion (matches PyTorch)
+│   ├── js/inference.js   — ONNX Runtime Web session + model inference
+│   ├── js/fft.js         — Radix-2 Cooley-Tukey FFT (size 2048)
+│   ├── js/note-utils.js  — index_to_note_name, softmax, topK (ported from Python)
+│   ├── js/spectrogram-canvas.js — Canvas 2D mel spectrogram visualization (magma cmap)
+│   ├── worklet/capture-processor.js — AudioWorkletProcessor (audio thread)
+│   └── model/
+│       ├── piano_net.onnx       — ONNX model (~8.5 MB)
+│       └── mel_filterbank.json  — Pre-computed mel filterbank [128×1025]
+│
 ├── knowledge.md          — Technical knowledge base (READ THIS FIRST)
 ├── agent_instructions.md — This file
 ├── setup_env.ps1         — One-time env setup script
@@ -110,6 +127,32 @@ Automatically uses `preprocessed_v2/manifest.json` if present. Saves best model 
 
 ---
 
+## Web App (docs/)
+
+### Re-export ONNX model after retraining
+```bash
+.venv/Scripts/python.exe export_onnx.py
+```
+This regenerates `docs/model/piano_net.onnx` and `docs/model/mel_filterbank.json`.
+
+### Test web app locally
+```bash
+cd docs && ../.venv/Scripts/python.exe -m http.server 8080
+```
+Open `http://localhost:8080` in browser. AudioWorklet requires localhost or HTTPS.
+
+### Deploy to GitHub Pages
+Push to main, then configure GitHub Pages to serve from `/docs` folder.
+
+### Web architecture
+- **No build tools** — pure ES modules, ONNX Runtime Web from CDN
+- Mel spectrogram computed in JS (FFT + exported filterbank weights) to match PyTorch exactly
+- ONNX Runtime WASM backend for universal mobile support
+- AudioWorklet for low-latency mic capture, OfflineAudioContext for resampling
+- Single-window inference (~743ms buffer → mel spec → model → result)
+
+---
+
 ## Architecture Constraints — Don't Change These
 
 - **Config constants** in `inference.py` and `preprocess_v2.py` must stay in sync:
@@ -134,4 +177,10 @@ preprocessed_v2/ (81,147 .pt tensors, shape [1, 128, ~65])
 piano_net.pth (trained model, 98.2% accuracy)
     ↓ inference.py / gui.py
 predicted note + confidence
+
+piano_net.pth
+    ↓ export_onnx.py
+docs/model/piano_net.onnx + mel_filterbank.json
+    ↓ browser (AudioWorklet → mel spec JS → ONNX Runtime WASM)
+real-time note detection on mobile
 ```
