@@ -16,7 +16,7 @@ Piano note classifier: 88-class CNN, audio → mel spectrogram → predicted not
 ## File Map
 
 ```
-ToneAI/
+NoteScopeAI/
 ├── model.py              — PianoNet CNN (3 conv blocks + AdaptiveAvgPool + FC)
 ├── train.py              — Training loop; auto-detects preprocessed_v2 manifest
 ├── dataset.py            — PreprocessedPianoDataset (.pt files) + PianoToneDataset (raw)

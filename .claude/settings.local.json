@@ -41,7 +41,8 @@
       "Bash(\"c:/Users/ToreGrüner/OneDrive/Code/ToneAI/.venv/Scripts/pip.exe\" install:*)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\ToreGrüner\\OneDrive\\Code\\ToneAI"
+      "c:\\Users\\ToreGrüner\\OneDrive\\Code\\ToneAI",
+      "C:\\Users\\ToreGrüner\\OneDrive\\Code"
     ]
   }
 }

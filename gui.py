@@ -45,7 +45,7 @@ def _play_file_thread(filepath):
 class ToneRecognitionApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Piano Tone AI")
+        self.root.title("NoteScope AI")
         self.root.geometry("960x720")
         self.root.minsize(800, 580)
 
@@ -64,7 +64,7 @@ class ToneRecognitionApp:
         # Top bar
         top = ttk.Frame(self.root, padding=(10, 8, 10, 4))
         top.pack(fill=tk.X)
-        ttk.Label(top, text="Piano Tone AI", font=("Helvetica", 15, "bold")).pack(side=tk.LEFT)
+        ttk.Label(top, text="NoteScope AI", font=("Helvetica", 15, "bold")).pack(side=tk.LEFT)
         ttk.Button(top, text="Reload Model", command=self._load_model).pack(side=tk.RIGHT)
 
         # Horizontal split: file list | results
